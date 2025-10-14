@@ -4,7 +4,6 @@ import pynvml
 import os
 import json
 from datasets import load_dataset
-import evaluate
 
 def get_gpu_type():
     """Returns the GPU type as a string."""

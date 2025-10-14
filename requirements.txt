@@ -1,1 +1,8 @@
-tensorrt_llm\ntransformers\npynvml\nlighteval\ndatasets\nevaluate\npandas\ntorch\n
+tensorrt_llm
+transformers
+pynvml
+lighteval
+datasets
+evaluate
+pandas
+torch
