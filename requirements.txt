@@ -1,8 +1,2 @@
 tensorrt_llm
-transformers
-pynvml
 lighteval
-datasets
-evaluate
-pandas
-torch
