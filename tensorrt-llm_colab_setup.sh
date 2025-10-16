@@ -1,5 +1,2 @@
 #!bin/bash
-sudo apt install cuda-12-8
-
-pip install --upgrade pip setuptools
-pip install -r requirements.txt
+pip3 install --upgrade pip setuptools && pip3 install tensorrt_llm
