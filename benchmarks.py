@@ -24,12 +24,13 @@ def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
     print("--- Starting Latency Benchmark ---")
 
     command = [
-        "trtllm-bench", "throughput",
+        "trtllm-bench", # "throughput",
         "--model", model_id,
-        "--batch_size", ",".join(map(str, batch_sizes)),
-        "--input_output_len", ",".join(seq_lengths),
-        "--results_file", results_file,
-        "--log_level", "info"
+         "throughput",
+        #"--batch_size", ",".join(map(str, batch_sizes)),
+        #"--input_output_len", ",".join(seq_lengths),
+        "--report_json", results_file,
+        # "--log_level", "info"
     ]
 
     print(f"Running command: {' '.join(command)}")

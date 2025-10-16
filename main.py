@@ -14,7 +14,7 @@ def main(model_id="google/gemma-3-270m-it-qat"):
     gpu_type = get_gpu_type()
 
     try:
-        latency_df = run_latency_benchmark(MODEL_ID, LATENCY_BATCH_SIZES, LATENCY_SEQ_LENGTHS, "gemma_270m_latency_results.csv")
+        latency_df = run_latency_benchmark(MODEL_ID, LATENCY_BATCH_SIZES, LATENCY_SEQ_LENGTHS, "gemma_270m_latency_results.json")
         latency_df['model_id'] = MODEL_ID
         latency_df['gpu_type'] = gpu_type
         latency_df['timestamp'] = datetime.now().isoformat()
