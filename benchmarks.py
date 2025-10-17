@@ -19,33 +19,75 @@ def get_gpu_type():
         print(f"Could not determine GPU type: {e}")
         return "unknown"
 
+def generate_latency_dataset(seq_lengths, file_path):
+    """Generates a dataset for the latency benchmark."""
+    with open(file_path, "w") as f:
+        for i, seq_len_pair in enumerate(seq_lengths):
+            input_len, output_len = map(int, seq_len_pair.split(','))
+            prompt = " ".join(["hello"] * input_len)
+            data = {
+                "task_id": i,
+                "prompt": prompt,
+                "output_tokens": output_len
+            }
+            f.write(json.dumps(data) + "\n")
+
 def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
     """Uses trtllm-bench to measure TTFT and TPOT across configurations."""
     print("--- Starting Latency Benchmark ---")
 
+    dataset_file = "latency_dataset.jsonl"
+    generate_latency_dataset(seq_lengths, dataset_file)
+
     command = [
-        "trtllm-bench", # "throughput",
+        "trtllm-bench",
         "--model", model_id,
-         "throughput",
-        #"--batch_size", ",".join(map(str, batch_sizes)),
-        #"--input_output_len", ",".join(seq_lengths),
+        "latency",
+        "--dataset", dataset_file,
         "--report_json", results_file,
-        # "--log_level", "info"
+        "--streaming", # To get TTFT and ITL
     ]
 
     print(f"Running command: {' '.join(command)}")
     subprocess.run(command, check=True)
 
-    df = pd.read_csv(results_file)
-    df_long = df.melt(
-        id_vars=['batch_size', 'input_len', 'output_len', 'gpu_arch'],
-        value_vars=['latency', 'tokens_per_sec', 'percentile_90_latency', 'percentile_95_latency', 'percentile_99_latency'],
-        var_name='metric_name',
-        value_name='metric_value'
-    )
+    with open(results_file, "r") as f:
+        results = json.load(f)
 
-    df_long['benchmark_type'] = 'latency'
-    df_long['metric_unit'] = df_long['metric_name'].apply(lambda x: 's' if 'latency' in x else 'tok/s')
+    data = []
+    # The structure of the JSON output is a dictionary with a "performance" key
+    # which contains a list of dictionaries, one for each request.
+    performance_results = results.get("performance", [])
+    for r in performance_results:
+        data.append({
+            'batch_size': 1, # Latency benchmark is run with batch size 1
+            'input_len': r.get('input_length'),
+            'output_len': r.get('output_length'),
+            'metric_name': 'latency',
+            'metric_value': r.get('latency'),
+            'metric_unit': 'ms',
+            'benchmark_type': 'latency'
+        })
+        data.append({
+            'batch_size': 1,
+            'input_len': r.get('input_length'),
+            'output_len': r.get('output_length'),
+            'metric_name': 'time_to_first_token',
+            'metric_value': r.get('time_to_first_token'),
+            'metric_unit': 'ms',
+            'benchmark_type': 'latency'
+        })
+        data.append({
+            'batch_size': 1,
+            'input_len': r.get('input_length'),
+            'output_len': r.get('output_length'),
+            'metric_name': 'tokens_per_second',
+            'metric_value': r.get('tokens_per_second'),
+            'metric_unit': 'tok/s',
+            'benchmark_type': 'latency'
+        })
+
+    df_long = pd.DataFrame(data)
 
     print("--- Latency Benchmark Complete ---")
     return df_long
