@@ -50,8 +50,7 @@ def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
         "--model", model_id,
         "latency",
         "--dataset", dataset_file,
-        "--report_json", results_file,
-        "--streaming", # To get TTFT and ITL
+        "--report_json", results_file
     ]
 
     print(f"Running command: {' '.join(command)}")

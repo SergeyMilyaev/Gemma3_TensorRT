@@ -1,0 +1,2 @@
+batch_sizes: [1, 4, 8, 16]
+max_seq_len: 4096
