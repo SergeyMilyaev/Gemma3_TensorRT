@@ -168,8 +168,7 @@ def run_accuracy_benchmark(model_id):
         "accelerate",
         f"model_name={model_id},trust_remote_code=True",
         "extended|ifeval|0|0",
-        "--output_dir", ifeval_output_dir,
-        "--override_batch_size", "1"
+        "--output-dir", ifeval_output_dir
     ]
     print(f"Running command: {' '.join(ifeval_command)}")
     subprocess.run(ifeval_command, check=True)

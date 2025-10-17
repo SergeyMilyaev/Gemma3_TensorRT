@@ -1,4 +1,3 @@
 tensorrt_llm
 emoji
 lighteval
-pyyaml
