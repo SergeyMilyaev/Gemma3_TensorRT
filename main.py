@@ -2,19 +2,31 @@ from datetime import datetime
 import pandas as pd
 from IPython.display import display
 from benchmarks import run_latency_benchmark, run_memory_benchmark, run_accuracy_benchmark, get_gpu_type
+import yaml
+import os
 
-def main(model_id="google/gemma-3-270m-it-qat"):
+def main(model_id="google/gemma-3-1b-it"):
     MODEL_ID = model_id
-    LATENCY_BATCH_SIZES = [1, 2, 4, 8, 16, 32]
-    LATENCY_SEQ_LENGTHS = ["64,64", "512,128", "2048,256", "4096,512"]
-    MEMORY_BATCH_SIZES = [1, 2, 4, 8, 16, 32]
-    MEMORY_MAX_SEQ_LEN = 4096
+
+    with open("latency_benchmark.yaml", "r") as f:
+        latency_config = yaml.safe_load(f)
+    
+    with open("memory_benchmark.yaml", "r") as f:
+        memory_config = yaml.safe_load(f)
+
+    LATENCY_BATCH_SIZES = latency_config["batch_sizes"]
+    LATENCY_SEQ_LENGTHS = latency_config["seq_lengths"]
+    MEMORY_BATCH_SIZES = memory_config["batch_sizes"]
+    MEMORY_MAX_SEQ_LEN = memory_config["max_seq_len"]
+    
+    results_file = f"{MODEL_ID.replace('/', '_')}_latency_results.json"
+    output_file = f"{MODEL_ID.replace('/', '_')}_benchmark_report.csv"
 
     all_results = []
     gpu_type = get_gpu_type()
 
     try:
-        latency_df = run_latency_benchmark(MODEL_ID, LATENCY_BATCH_SIZES, LATENCY_SEQ_LENGTHS, "gemma_270m_latency_results.json")
+        latency_df = run_latency_benchmark(MODEL_ID, LATENCY_BATCH_SIZES, LATENCY_SEQ_LENGTHS, results_file)
         latency_df['model_id'] = MODEL_ID
         latency_df['gpu_type'] = gpu_type
         latency_df['timestamp'] = datetime.now().isoformat()
@@ -48,7 +60,6 @@ def main(model_id="google/gemma-3-270m-it-qat"):
                 final_df[col] = None
         final_df = final_df[cols]
 
-        output_file = "gemma_270m_benchmark_report.csv"
         final_df.to_csv(output_file, index=False)
         print(f"Benchmark complete. Results saved to {output_file}")
         display(final_df)

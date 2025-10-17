@@ -19,25 +19,31 @@ def get_gpu_type():
         print(f"Could not determine GPU type: {e}")
         return "unknown"
 
-def generate_latency_dataset(seq_lengths, file_path):
-    """Generates a dataset for the latency benchmark."""
-    with open(file_path, "w") as f:
-        for i, seq_len_pair in enumerate(seq_lengths):
-            input_len, output_len = map(int, seq_len_pair.split(','))
-            prompt = " ".join(["hello"] * input_len)
-            data = {
-                "task_id": i,
-                "prompt": prompt,
-                "output_tokens": output_len
-            }
-            f.write(json.dumps(data) + "\n")
-
 def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
     """Uses trtllm-bench to measure TTFT and TPOT across configurations."""
     print("--- Starting Latency Benchmark ---")
 
     dataset_file = "latency_dataset.jsonl"
-    generate_latency_dataset(seq_lengths, dataset_file)
+    
+    # Generate dataset using prepare_dataset.py
+    for seq_len_pair in seq_lengths:
+        input_len, output_len = map(int, seq_len_pair.split(','))
+        prepare_dataset_command = [
+            "python",
+            "TensorRT-LLM/benchmarks/cpp/prepare_dataset.py",
+            "--tokenizer", model_id,
+            "--trust-remote-code",
+            "--stdout",
+            "token-norm-dist",
+            "--input-mean", str(input_len),
+            "--output-mean", str(output_len),
+            "--input-stdev", "0",
+            "--output-stdev", "0",
+            "--num-requests", "1"
+        ]
+        print(f"Running command: {' '.join(prepare_dataset_command)}")
+        with open(dataset_file, "a") as f:
+            subprocess.run(prepare_dataset_command, stdout=f, check=True)
 
     command = [
         "trtllm-bench",
@@ -112,7 +118,7 @@ def run_memory_benchmark(model_id, batch_sizes, seq_len):
 
     print(f"Loading model: {model_id}...")
     llm = LLM(model=model_id)
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     print("Model and tokenizer loaded successfully.")
 
     mem_info_static = pynvml.nvmlDeviceGetMemoryInfo(handle)
@@ -159,8 +165,9 @@ def run_accuracy_benchmark(model_id):
     ifeval_output_dir = "./ifeval_results"
     ifeval_command = [
         "lighteval",
-        "--model_args", f"pretrained={model_id}",
-        "--tasks", "extended|ifeval|0|0",
+        "accelerate",
+        f"model_name={model_id},trust_remote_code=True",
+        "extended|ifeval|0|0",
         "--output_dir", ifeval_output_dir,
         "--override_batch_size", "1"
     ]
