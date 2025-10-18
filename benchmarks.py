@@ -4,6 +4,7 @@ import pynvml
 import os
 import json
 from datasets import load_dataset
+import evaluate
 
 def get_gpu_type():
     """Returns the GPU type as a string."""
@@ -136,7 +137,7 @@ def run_memory_benchmark(model_id, batch_sizes, seq_len):
     for bs in batch_sizes:
         print(f"Running memory benchmark for batch size: {bs}")
         prompts = [" ".join(["test"] * (seq_len // 2))] * bs
-        outputs = llm.generate(prompts, max_new_tokens=seq_len//2)
+        outputs = llm.generate(prompts)
 
         mem_info_dynamic = pynvml.nvmlDeviceGetMemoryInfo(handle)
         peak_used_gb = (mem_info_dynamic.used / (1024**3)) - baseline_used_gb

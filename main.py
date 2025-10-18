@@ -1,7 +1,7 @@
 from datetime import datetime
 import pandas as pd
 from IPython.display import display
-from benchmarks import run_latency_benchmark, run_memory_benchmark, run_accuracy_benchmark, get_gpu_type
+from benchmarks import run_latency_benchmark, run_memory_benchmark, get_gpu_type
 import yaml
 import os
 
@@ -43,14 +43,7 @@ def main(model_id="google/gemma-3-1b-it"):
     except Exception as e:
         print(f"Memory benchmark failed: {e}")
 
-    try:
-        accuracy_df = run_accuracy_benchmark(MODEL_ID)
-        accuracy_df['model_id'] = MODEL_ID
-        accuracy_df['gpu_type'] = gpu_type
-        accuracy_df['timestamp'] = datetime.now().isoformat()
-        all_results.append(accuracy_df)
-    except Exception as e:
-        print(f"Accuracy benchmark failed: {e}")
+    print("To run the accuracy benchmark, please run the `accuracy_benchmark.py` script in a separate environment with the required dependencies.")
 
     if all_results:
         final_df = pd.concat(all_results, ignore_index=True)
