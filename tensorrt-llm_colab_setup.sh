@@ -1,5 +1,5 @@
 #!bin/bash
 # TensorRT-LLM may require installation of a newer CUDA version, for example:
-# sudo apt install cuda-12-8
+# sudo apt-get update && sudo apt install cuda-12-8
 pip3 install --upgrade pip setuptools && pip3 install tensorrt_llm
 #pip3 install --upgrade omegaconf
