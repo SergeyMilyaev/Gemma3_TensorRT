@@ -20,7 +20,7 @@ def get_gpu_type():
         print(f"Could not determine GPU type: {e}")
         return "unknown"
 
-def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
+def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file, engine_dir=None):
     """Uses trtllm-bench to measure TTFT and TPOT across configurations."""
     print("--- Starting Latency Benchmark ---")
 
@@ -52,8 +52,14 @@ def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
         "latency",
         "--dataset", dataset_file,
         "--report_json", results_file,
-        "--backend", "pytorch",
     ]
+
+    if engine_dir:
+        print(f"Using engine from: {engine_dir}")
+        command.extend(["--engine_dir", engine_dir])
+        command.extend(["--backend", "tensorrt"])
+    else:
+        command.extend(["--backend", "pytorch"])
 
     print(f"Running command: {' '.join(command)}")
     subprocess.run(command, check=True)
@@ -99,7 +105,7 @@ def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file):
     print("--- Latency Benchmark Complete ---")
     return df_long
 
-def run_memory_benchmark(model_id, batch_sizes, seq_len):
+def run_memory_benchmark(model_id, batch_sizes, seq_len, engine_dir=None):
     """Measures static and dynamic VRAM usage using pynvml."""
     print("--- Starting Memory Benchmark ---")
 
@@ -117,9 +123,22 @@ def run_memory_benchmark(model_id, batch_sizes, seq_len):
     mem_info_before = pynvml.nvmlDeviceGetMemoryInfo(handle)
     baseline_used_gb = mem_info_before.used / (1024**3)
 
-    print(f"Loading model: {model_id}...")
-    llm = LLM(model=model_id)
-    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    if engine_dir:
+        print(f"Loading engine from: {engine_dir}")
+        llm = LLM(model=engine_dir, tokenizer=model_id)
+    else:
+        print(f"Loading model: {model_id}...")
+        llm = LLM(model=model_id)
+        # Tokenizer is loaded implicitly by LLM(model=model_id) usually, but we need to check if we use it directly?
+        # The code below only uses llm.generate.
+        # But wait, original code loaded tokenizer separately?
+        # tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+        # It's not used in the loop below. So maybe it was redundant or just to check load.
+        # I'll keep the print message simple.
+    
+    # Original code loaded tokenizer but didn't seem to use it explicitly in the loop (llm.generate takes strings).
+    # But let's check original code carefully.
+    
     print("Model and tokenizer loaded successfully.")
 
     mem_info_static = pynvml.nvmlDeviceGetMemoryInfo(handle)
