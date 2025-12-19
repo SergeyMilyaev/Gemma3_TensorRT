@@ -1,4 +1,2 @@
 tensorrt_llm
-emoji
-lighteval
 onnx==1.19.1
