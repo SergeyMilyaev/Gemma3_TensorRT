@@ -65,13 +65,57 @@ def main():
         "--output_dir", str(engine_path)
     ]
     
+    # Infer parameters from benchmarks
+    import re
+    
+    # Defaults
+    default_max_input_len = 3000
+    default_max_seq_len = 3100
+    
+    bench_max_input_len = 0
+    bench_max_seq_len = 0
+    
+    # Parse latency_benchmark.yaml
+    latency_file = Path("latency_benchmark.yaml")
+    if latency_file.exists():
+        try:
+            content = latency_file.read_text()
+            matches = re.findall(r'-\s*"(\d+),(\d+)"', content)
+            for inp, out in matches:
+                inp = int(inp)
+                out = int(out)
+                bench_max_input_len = max(bench_max_input_len, inp)
+                bench_max_seq_len = max(bench_max_seq_len, inp + out)
+        except Exception as e:
+            print(f"Warning: parsing latency_benchmark.yaml failed: {e}")
+
+    # Parse memory_benchmark.yaml
+    memory_file = Path("memory_benchmark.yaml")
+    if memory_file.exists():
+        try:
+            content = memory_file.read_text()
+            match = re.search(r'max_seq_len:\s*(\d+)', content)
+            if match:
+                val = int(match.group(1))
+                bench_max_seq_len = max(bench_max_seq_len, val)
+                bench_max_input_len = max(bench_max_input_len, val)
+        except Exception as e:
+            print(f"Warning: parsing memory_benchmark.yaml failed: {e}")
+
+    # Determine final values
+    final_max_input_len = bench_max_input_len if bench_max_input_len > 0 else default_max_input_len
+    final_max_seq_len = bench_max_seq_len if bench_max_seq_len > 0 else default_max_seq_len
+    final_max_seq_len = max(final_max_seq_len, final_max_input_len)
+
+    print(f"Inferred max_input_len: {final_max_input_len}, max_seq_len: {final_max_seq_len}")
+
     # Gemma 3 specific default parameters (as seen in README)
     # Adjust these defaults if necessary or expose them as arguments
     if "gemma" in args.model_id.lower():
          build_cmd.extend([
              "--max_batch_size", "8",
-             "--max_input_len", "3000",
-             "--max_seq_len", "3100"
+             "--max_input_len", str(final_max_input_len),
+             "--max_seq_len", str(final_max_seq_len)
          ])
 
     run_command(build_cmd, "Building TensorRT-LLM Engine")
