@@ -3,6 +3,7 @@ import subprocess
 import os
 import sys
 from pathlib import Path
+import yaml
 
 def run_command(command, description):
     print(f"--- {description} ---")
@@ -79,13 +80,15 @@ def main():
     latency_file = Path("latency_benchmark.yaml")
     if latency_file.exists():
         try:
-            content = latency_file.read_text()
-            matches = re.findall(r'-\s*"(\d+),(\d+)"', content)
-            for inp, out in matches:
-                inp = int(inp)
-                out = int(out)
-                bench_max_input_len = max(bench_max_input_len, inp)
-                bench_max_seq_len = max(bench_max_seq_len, inp + out)
+            with open(latency_file, 'r') as f:
+                latency_config = yaml.safe_load(f)
+            if 'benchmarks' in latency_config:
+                for benchmark in latency_config['benchmarks']:
+                    if 'input_output_len' in benchmark:
+                        for io_len_str in benchmark['input_output_len']:
+                            inp, out = map(int, io_len_str.split(','))
+                            bench_max_input_len = max(bench_max_input_len, inp)
+                            bench_max_seq_len = max(bench_max_seq_len, inp + out)
         except Exception as e:
             print(f"Warning: parsing latency_benchmark.yaml failed: {e}")
 
@@ -93,10 +96,10 @@ def main():
     memory_file = Path("memory_benchmark.yaml")
     if memory_file.exists():
         try:
-            content = memory_file.read_text()
-            match = re.search(r'max_seq_len:\s*(\d+)', content)
-            if match:
-                val = int(match.group(1))
+            with open(memory_file, 'r') as f:
+                memory_config = yaml.safe_load(f)
+            if 'max_seq_len' in memory_config:
+                val = int(memory_config['max_seq_len'])
                 bench_max_seq_len = max(bench_max_seq_len, val)
                 bench_max_input_len = max(bench_max_input_len, val)
         except Exception as e:
