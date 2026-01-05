@@ -4,6 +4,7 @@ from IPython.display import display
 from benchmarks import run_latency_benchmark, run_memory_benchmark, get_gpu_type
 import yaml
 import os
+from transformers import AutoConfig
 
 def main(model_id="google/gemma-3-1b-it", engine_dir=None):
     MODEL_ID = model_id
@@ -18,6 +19,33 @@ def main(model_id="google/gemma-3-1b-it", engine_dir=None):
     LATENCY_SEQ_LENGTHS = latency_config["seq_lengths"]
     MEMORY_BATCH_SIZES = memory_config["batch_sizes"]
     MEMORY_MAX_SEQ_LEN = memory_config["max_seq_len"]
+
+    try:
+        config = AutoConfig.from_pretrained(MODEL_ID, trust_remote_code=True)
+        max_len = getattr(config, "max_position_embeddings", None)
+        if max_len is None:
+            max_len = getattr(config, "n_positions", None)
+        if max_len is None:
+            max_len = getattr(config, "seq_length", None)
+            
+        if max_len:
+            print(f"Model max sequence length: {max_len}")
+            
+            if MEMORY_MAX_SEQ_LEN > max_len:
+                print(f"Adjusting memory benchmark max_seq_len from {MEMORY_MAX_SEQ_LEN} to {max_len}")
+                MEMORY_MAX_SEQ_LEN = max_len
+            
+            valid_seq_lengths = []
+            for seq_len_pair in LATENCY_SEQ_LENGTHS:
+                input_len, output_len = map(int, seq_len_pair.split(','))
+                if input_len + output_len <= max_len:
+                    valid_seq_lengths.append(seq_len_pair)
+                else:
+                    print(f"Skipping latency benchmark configuration {seq_len_pair} (exceeds max length {max_len})")
+            LATENCY_SEQ_LENGTHS = valid_seq_lengths
+            
+    except Exception as e:
+        print(f"Could not load model config to adjust sequence lengths: {e}")
     
     results_file = f"{MODEL_ID.replace('/', '_')}_latency_results.json"
     output_file = f"{MODEL_ID.replace('/', '_')}_benchmark_report.csv"
