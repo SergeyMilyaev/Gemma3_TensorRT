@@ -129,15 +129,6 @@ def run_memory_benchmark(model_id, batch_sizes, seq_len, engine_dir=None):
     else:
         print(f"Loading model: {model_id}...")
         llm = LLM(model=model_id)
-        # Tokenizer is loaded implicitly by LLM(model=model_id) usually, but we need to check if we use it directly?
-        # The code below only uses llm.generate.
-        # But wait, original code loaded tokenizer separately?
-        # tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
-        # It's not used in the loop below. So maybe it was redundant or just to check load.
-        # I'll keep the print message simple.
-    
-    # Original code loaded tokenizer but didn't seem to use it explicitly in the loop (llm.generate takes strings).
-    # But let's check original code carefully.
     
     print("Model and tokenizer loaded successfully.")
 
