@@ -6,7 +6,7 @@ import yaml
 import os
 from transformers import AutoConfig
 
-def main(model_id="google/gemma-3-1b-it", engine_dir=None):
+def main(model_id="google/gemma-3-1b-it"):
     MODEL_ID = model_id
 
     with open("latency_benchmark.yaml", "r") as f:
@@ -56,7 +56,7 @@ def main(model_id="google/gemma-3-1b-it", engine_dir=None):
     gpu_type = get_gpu_type()
 
     try:
-        latency_df = run_latency_benchmark(MODEL_ID, LATENCY_BATCH_SIZES, LATENCY_SEQ_LENGTHS, results_file, engine_dir=engine_dir)
+        latency_df = run_latency_benchmark(MODEL_ID, LATENCY_BATCH_SIZES, LATENCY_SEQ_LENGTHS, results_file)
         latency_df['model_id'] = MODEL_ID
         latency_df['gpu_type'] = gpu_type
         latency_df['timestamp'] = datetime.now().isoformat()
@@ -65,7 +65,7 @@ def main(model_id="google/gemma-3-1b-it", engine_dir=None):
         print(f"Latency benchmark failed: {e}")
 
     try:
-        memory_df = run_memory_benchmark(MODEL_ID, MEMORY_BATCH_SIZES, MEMORY_MAX_SEQ_LEN, engine_dir=engine_dir)
+        memory_df = run_memory_benchmark(MODEL_ID, MEMORY_BATCH_SIZES, MEMORY_MAX_SEQ_LEN)
         memory_df['model_id'] = MODEL_ID
         memory_df['gpu_type'] = gpu_type
         memory_df['timestamp'] = datetime.now().isoformat()
@@ -93,7 +93,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run benchmarks for a given model.")
     parser.add_argument("model_id", nargs="?", default="google/gemma-3-1b-it", help="The model ID to benchmark.")
-    parser.add_argument("--engine_dir", type=str, default=None, help="Optional path to a built TensorRT-LLM engine.")
     
     args = parser.parse_args()
-    main(args.model_id, args.engine_dir)
+    main(args.model_id)
