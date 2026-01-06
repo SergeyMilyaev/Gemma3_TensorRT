@@ -24,7 +24,9 @@ def run_latency_benchmark(model_id, batch_sizes, seq_lengths, results_file, engi
     """Uses trtllm-bench to measure TTFT and TPOT across configurations."""
     print("--- Starting Latency Benchmark ---")
 
-    dataset_file = "latency_dataset.jsonl"
+    dataset_dir = "datasets"
+    os.makedirs(dataset_dir, exist_ok=True)
+    dataset_file = os.path.join(dataset_dir, f"{model_id.replace('/', '_')}_latency_dataset.jsonl")
     
     # Generate dataset using prepare_dataset.py
     for seq_len_pair in seq_lengths:

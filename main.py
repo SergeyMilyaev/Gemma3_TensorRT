@@ -47,8 +47,10 @@ def main(model_id="google/gemma-3-1b-it", engine_dir=None):
     except Exception as e:
         print(f"Could not load model config to adjust sequence lengths: {e}")
     
-    results_file = f"{MODEL_ID.replace('/', '_')}_latency_results.json"
-    output_file = f"{MODEL_ID.replace('/', '_')}_benchmark_report.csv"
+    results_dir = "results"
+    os.makedirs(results_dir, exist_ok=True)
+    results_file = os.path.join(results_dir, f"{MODEL_ID.replace('/', '_')}_latency_results.json")
+    output_file = os.path.join(results_dir, f"{MODEL_ID.replace('/', '_')}_benchmark_report.csv")
 
     all_results = []
     gpu_type = get_gpu_type()
